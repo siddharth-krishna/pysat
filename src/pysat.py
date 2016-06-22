@@ -324,7 +324,7 @@ class Solver():
         return self._status
 
     def model(self):
-        return self._finalModel
+        return dict([(litToInt(l), self._finalModel[l]) for l in xrange(len(self._finalModel))])
 
     def printStats(self):
         if self._conflicts == 0:
