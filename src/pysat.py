@@ -301,6 +301,8 @@ class Solver():
     def solve(self, assumptions = [], maxConflicts = None):
         self._time1 = time.time()
         try:
+            self._cancelUntil(0)
+            self._finalModel = []
             for asm in assumptions:
                 self._uncheckedEnqueue(asm)
             self._status = cst.lit_Undef
@@ -308,6 +310,11 @@ class Solver():
             while self._status == cst.lit_Undef:
                 self._restarts += 1
                 self._status = self._search(None if maxConflicts==None else maxConflicts(self))
+            if self.status == cst.lit_True:
+                for v in range(0, len(solver._values)):
+                    val = solver._values[v]
+                    assert val is not cst.lit_Undef
+                    solver._finalModel.append(val==cst.lit_True)
         except KeyboardInterrupt:
             self._searchTime = time.time() - self._time1
             print("c Interrupted")
@@ -315,6 +322,9 @@ class Solver():
 
         self._searchTime = time.time() - self._time1
         return self._status
+
+    def model(self):
+        return self._finalModel
 
     def printStats(self):
         if self._conflicts == 0:
