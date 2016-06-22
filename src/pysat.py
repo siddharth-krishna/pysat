@@ -13,19 +13,19 @@ from prettyPrinter import *
 thisispysat = '''
    ___         ____ ___  ______
   / _ \ __ __ / __// _ |/_  __/
- / ___// // /_\ \ / __ | / /   
-/_/    \_, //___//_/ |_|/_/    
-      /___/                    
+ / ___// // /_\ \ / __ | / /
+/_/    \_, //___//_/ |_|/_/
+      /___/
 '''
 
 def readFile(solver, filename):
     ''' A very python-like parser for CNF files (probably too nested I fear)'''
     starttime = time.time()
     print("c Opening file {f:s}".format(f=filename))
-    
+
     for line in myopen(filename):
         if not line[0] in ['c','p']:
-            solver.addClause([l for l in list(map(int,line.split())) if l is not 0]) 
+            solver.addClause([l for l in list(map(int,line.split())) if l is not 0])
 
     print("c File readed in {t:03.2f}s".format(t=time.time()-starttime))
 
@@ -43,7 +43,7 @@ class Configuration():
     verbosity = 1
     printModel = False
     restartInc = 2                   # restart interval factor (as in Minisat)
-     
+
 class Solver():
     ''' Some function names are taken from the Minisat interface '''
     _config = None            # Configuration of this solver
@@ -59,7 +59,7 @@ class Solver():
     _seen = MyArray('b')      # seen array used to mark variables during conflict analysis
     _level = MyArray('I')     # decision level of this assigned variable
     _varInc = 1               # Amount of each variable bump (multiplied by 1/varDecay after each conflict)
-    
+
     _flags = MyArray('I')     # Used to mark variables (for LBD computation)
     _flag = 0
     _finalModel = []          # the model (if SAT) will be copied in this array of variables)
@@ -85,9 +85,9 @@ class Solver():
             config = Configuration()
         self._time0 = time.time()
         self._config = config
-        self._varHeap = SatHeapq(lambda x,y: self._scores[x] > self._scores[y]) 
+        self._varHeap = SatHeapq(lambda x,y: self._scores[x] > self._scores[y])
         return
-    
+
     def _valueLit(self, l):
         v,s = litToVarSign(l)
         if self._values[v] is cst.lit_Undef: return cst.lit_Undef
@@ -104,7 +104,7 @@ class Solver():
             if self._values[v] == cst.lit_Undef: break
         if v == None or self._values[v] != cst.lit_Undef: return None
         return varToLit(v, True)
-    
+
     def _cancelUntil(self, level = 0):
         ''' Backtrack to the given level (undoing everything) '''
         if len(self._trailLevels) <= level: return
@@ -118,13 +118,13 @@ class Solver():
         del self._trail[self._trailLevels[level] - len(self._trail):]
         self._trailIndexToPropagate = self._trailLevels[level]
         del self._trailLevels[level - len(self._trailLevels):]
-        
+
     def _newDecisionLevel(self):
         self._trailLevels.append(len(self._trail))
 
     def _decisionLevel(self):
         return len(self._trailLevels)
-    
+
     def _uncheckedEnqueue(self, l, r=None):
         ''' Enqueue a literal l to the propagation queue.
             This is unchecked in the sense that no contradiction can be detected'''
@@ -134,7 +134,7 @@ class Solver():
         self._reason[v] = r
         self._level[v] = self._decisionLevel()
         self._trail.append(l)
-    
+
     def _varBump(self, v):
         self._scores[v] += self._varInc
         if self._scores[v] > 1e100: # rescale the scores
@@ -144,7 +144,7 @@ class Solver():
         if self._varHeap.inHeap(v): self._varHeap.decrease(v)      # This is a lazy bump: assigned variables will be replaced during cancelUntil
 
     def _propagate(self):
-        ''' Can return a conflict or None 
+        ''' Can return a conflict or None
             This version uses 2-watched literals'''
         while self._trailIndexToPropagate < len(self._trail):
             self._propagations += 1
@@ -152,12 +152,12 @@ class Solver():
             #printTrail(self)
             #printClauses(self, lambda x : self._valueLit(x) != cst.lit_Undef, lambda x : self._valueLit(x) == cst.lit_True)
             self._trailIndexToPropagate += 1
-            i = 0; j = 0; wl = self._watches[litToPropagate]       # wl is the list of watched clauses to inspect 
+            i = 0; j = 0; wl = self._watches[litToPropagate]       # wl is the list of watched clauses to inspect
             while i < len(wl):
                 self._watchesInspections += 1
                 c = wl[i];                                         # c is a clause containing -litToPropagate watched by it
                 foundNewWatch = False
-                assert notLit(litToPropagate)==c[0] or notLit(litToPropagate)==c[1] # Strong assertion introduced in Minisat 
+                assert notLit(litToPropagate)==c[0] or notLit(litToPropagate)==c[1] # Strong assertion introduced in Minisat
                 assert len(c) > 1                                  # Clauses of size 1 are just untailed literals at level 0
                 if c[0] == notLit(litToPropagate):
                     c[0]=c[1]; c[1]=notLit(litToPropagate)         # Make sure the false literal is in 1
@@ -168,7 +168,7 @@ class Solver():
 
                 for k in range(2,len(c)):                          # Remember that c[0] and c[1] are special
                     l = c[k]
-                    if self._valueLit(l) != cst.lit_False: 
+                    if self._valueLit(l) != cst.lit_False:
                         assert c[k] == l
                         c[k]=c[1]; c[1]=l                          # moves the watched literal to c[1]
                         self._watches[notLit(l)].append(c)         # now this clause is watched by l instead of litToPropagate
@@ -176,10 +176,10 @@ class Solver():
                         i+=1                                       # wl[i] will not be copied to any smaller wl[j]
                         foundNewWatch = True                       # Don't propagate anything, the clause is satisfied
                         break                                      # Stop inspecting the current clause
-                
-                if foundNewWatch: 
+
+                if foundNewWatch:
                     continue
-                
+
                 if self._valueLit(c[0]) == cst.lit_False:          # The clause is empty
                     while i < len(wl):                             # Copy remaining watches, preparing for a clean early exit
                         wl[j] = wl[i]; j+=1; i+=1
@@ -224,7 +224,7 @@ class Solver():
         learnt[0] = notLit(p)                                               # The asserting literal (FUIP, where to backtrack)
         for i in range(1,len(learnt)): self._seen[litToVar(learnt[i])] = 0  # remove the remaining seen tags
 
-        if len(learnt) > 1: 
+        if len(learnt) > 1:
             p = learnt[maxbl]; learnt[maxbl] = learnt[1]; learnt[1] = p
 
         # computes the LBD
@@ -235,29 +235,29 @@ class Solver():
         self._clauses.append(Clause([intToLit(l) for l in listOfInts]))
         self._nbvars = max(self._nbvars, max(abs(i) for i in listOfInts))
 
-    def buildDataStructure(self): 
+    def buildDataStructure(self):
         starttime = time.time()
 
         self._values.growTo(self._nbvars, cst.lit_Undef)
         for e in [self._values, self._scores, self._polarity, self._reason, self._seen, self._level]:
             e.growTo(self._nbvars)
         self._watches.growTo(self._nbvars * 2, [])
-        
+
         for c in self._clauses:
             if len(c)==1:
                 self._uncheckedEnqueue(c[0]) #FIXME I need to check here if there is a contradiction
-            for l in c[0:2]: 
+            for l in c[0:2]:
                 self._watches[notLit(l)].append(c)
                 self._scores[litToVar(l)] += 1
         for i in range(0,self._nbvars): self._varHeap.insert(i)
         print("c Building data structures in {t:03.2f}s".format(t=time.time()-starttime))
-        print("c Ready to go with {v:d} variables and {c:d} clauses".format(v=self._nbvars, 
+        print("c Ready to go with {v:d} variables and {c:d} clauses".format(v=self._nbvars,
                   c=len(self._clauses)))
- 
+
     def _checkRestart(self):
         ''' Checks if a restart is needed '''
         return False
-    
+
     def _checkDBReduce(self):
         ''' Check and reduce the learnt clause database if needed '''
         return
@@ -275,7 +275,7 @@ class Solver():
                 conflictC += 1; self._conflicts += 1
                 self._sumDecisionLevel += self._decisionLevel()
                 if self._conflicts % 100 == 0:
-                    print("c conflict " + str(self._conflicts)) 
+                    print("c conflict " + str(self._conflicts))
                 if self._decisionLevel() is 0: return cst.lit_False # We proved UNSAT
                 nc, backtrackLevel, lbd = self._analyze(confl)
                 self._varInc /= self._config.varDecay
@@ -289,7 +289,7 @@ class Solver():
                     self._attachClause(ncc)
                     self._uncheckedEnqueue(nc[0],ncc)
             else:   # No conflict
-                if self._checkRestart(): break # triggers a restart 
+                if self._checkRestart(): break # triggers a restart
                 self._checkDBReduce()
                 l = self._pickBranchLit()
                 if l == None: return cst.lit_True
@@ -297,15 +297,17 @@ class Solver():
                 self._uncheckedEnqueue(l)
         self._cancelUntil(0)
         return cst.lit_Undef
-            
-    def solve(self, maxConflicts = None):
+
+    def solve(self, assumptions = [], maxConflicts = None):
         self._time1 = time.time()
         try:
+            for asm in assumptions:
+                self._uncheckedEnqueue(asm)
             self._status = cst.lit_Undef
             self._restarts = 0
             while self._status == cst.lit_Undef:
                 self._restarts += 1
-                self._status = self._search(None if maxConflicts==None else maxConflicts(self)) 
+                self._status = self._search(None if maxConflicts==None else maxConflicts(self))
         except KeyboardInterrupt:
             self._searchTime = time.time() - self._time1
             print("c Interrupted")
@@ -318,7 +320,7 @@ class Solver():
         if self._conflicts == 0:
             print("c conflicts: 0")
             return
-        print("c cpu time: \033[1;32m{t:03.2f}\033[0ms (search={ts:03.2f}s)".format(t=time.time()-self._time0, ts=self._searchTime)) 
+        print("c cpu time: \033[1;32m{t:03.2f}\033[0ms (search={ts:03.2f}s)".format(t=time.time()-self._time0, ts=self._searchTime))
         print("c conflicts: " + str(self._conflicts) + " (" + str(int(self._conflicts /self._searchTime)) + "/s)")
         print("c unary clauses:" + str(self._unaryClauses))
         print("c restarts: " + str(self._restarts))
@@ -340,7 +342,7 @@ def banner():
     print("c                               \033[1;33mThis is pysat 0.1 (L. Simon 2016)\033[0m\nc")
     print("c (slowly) learning CDCL algorithms (roughly 10-50x slower than plain C/C++ CDCL implementations)")
     print("c          but this is a native Python implementation. Easy to play with!")
-    
+
 banner()
 solver = Solver()
 
