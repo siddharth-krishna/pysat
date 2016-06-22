@@ -1,4 +1,5 @@
 import itertools
+import pprint
 from pysat import *
 
 def add_rules(solver):
@@ -37,6 +38,9 @@ def add_sudoku(solver, literals):
     for l in literals:
         solver.addClause([l])
 
+
+pp = pprint.PrettyPrinter()
+
 solver = Solver()
 add_rules(solver)
 sudoku = read_sudoku("../sudoku-ex/ex01.txt")
@@ -48,6 +52,8 @@ if result == cst.lit_False:
     print("c UNSATISFIABLE")
 elif result == cst.lit_True:
     print("c SATISFIABLE")
+    model = solver.model()
+    pp.pprint(model)
 else:
     print("c UNKNOWN")
 solver.printStats()
