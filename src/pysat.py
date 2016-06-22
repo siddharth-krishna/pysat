@@ -304,7 +304,7 @@ class Solver():
             self._cancelUntil(0)
             self._finalModel = []
             for asm in assumptions:
-                self._uncheckedEnqueue(asm)
+                self._uncheckedEnqueue(intToLit(asm))
             self._status = cst.lit_Undef
             self._restarts = 0
             while self._status == cst.lit_Undef:
