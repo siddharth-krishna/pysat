@@ -1,5 +1,5 @@
 import itertools
-from pysat import Solver
+from pysat import *
 
 def add_rules(solver):
     # Sudoku rules encoding:
@@ -33,7 +33,21 @@ def read_sudoku(fname):
             literals.append(n)
     return literals
 
+def add_sudoku(solver, literals):
+    for l in literals:
+        solver.addClause([l])
+
 solver = Solver()
 add_rules(solver)
 sudoku = read_sudoku("../sudoku-ex/ex01.txt")
-solver.solve(sudoku)
+print(", ".join([str(x) for x in sudoku]))
+add_sudoku(solver, sudoku)
+result = solver.solve()
+cst = Constants()
+if result == cst.lit_False:
+    print("c UNSATISFIABLE")
+elif result == cst.lit_True:
+    print("c SATISFIABLE")
+else:
+    print("c UNKNOWN")
+solver.printStats()

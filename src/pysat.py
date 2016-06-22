@@ -310,11 +310,11 @@ class Solver():
             while self._status == cst.lit_Undef:
                 self._restarts += 1
                 self._status = self._search(None if maxConflicts==None else maxConflicts(self))
-            if self.status == cst.lit_True:
-                for v in range(0, len(solver._values)):
-                    val = solver._values[v]
+            if self._status == cst.lit_True:
+                for v in range(0, len(self._values)):
+                    val = self._values[v]
                     assert val is not cst.lit_Undef
-                    solver._finalModel.append(val==cst.lit_True)
+                    self._finalModel.append(val==cst.lit_True)
         except KeyboardInterrupt:
             self._searchTime = time.time() - self._time1
             print("c Interrupted")
